@@ -1,0 +1,20 @@
+<project name="MineAI" default="run">
+	<property name="src" location="src" />
+	<property name="build" location="build" />
+	<target name="compile">
+		<javac srcdir="${src}" destdir="${build}" includeAntRuntime="false" classpath="${src}" />
+	</target>
+	<target name="run" depends="compile">
+		<java classpath="${src}" classname="MineAI">
+			<arg value="4" />
+		</java>
+	</target>
+	<target name="dist" depends="compile">
+		<jar jarfile="MineAI.jar" basedir="${build}" />
+	</target>
+	<target name="distrun" depends="dist">
+		<java jar="MineAI.jar" fork="true">
+			<arg value="4" />
+		</java>
+	</target>
+</project>
