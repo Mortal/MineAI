@@ -5,7 +5,7 @@
 		<javac srcdir="${src}" destdir="${build}" includeAntRuntime="false" classpath="${src}" />
 	</target>
 	<target name="run" depends="compile">
-		<java classpath="${src}" classname="MineAI">
+		<java classpath="${build}" classname="MineAI">
 			<arg value="4" />
 		</java>
 	</target>

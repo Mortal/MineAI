@@ -1,6 +1,9 @@
 class Game {
 	public final int dimensions;
-	public Game(int dimensions) {
-		this.dimensions = dimensions;
+	private Minefield field;
+	public Game(Minefield field) {
+		this.field = field;
+		this.dimensions = field.dimensions;
 	}
+	public Minefield getField() {return this.field;}
 }
