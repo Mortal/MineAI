@@ -1,9 +1,9 @@
 public class MineAI {
 	public static void main(String[] args) {
+		
 		MineOpt opts = new MineOpt(args);
-		int[] size = new int[opts.dims];
-		for (int i = 0; i < opts.dims; ++i) {size[i] = 5;}
-		Minefield field = new Minefield(opts.dims, size, 10);
+		int[] size = opts.size.clone();
+		Minefield field = new Minefield(size.length, size, opts.mines);
 		System.out.println(field.renderASCII());
 		Game game = new Game(field);
 		System.out.println("The game is on, Freddie. Do you wanna play?");

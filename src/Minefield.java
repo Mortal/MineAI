@@ -1,4 +1,5 @@
 import java.util.Random;
+import java.util.Vector;
 class Minefield {
 	public final int dimensions;
 	public final int[] size;
@@ -22,7 +23,7 @@ class Minefield {
 		orderAssert(dimensions, pos);
 		int id = 0;
 		for (int i = 0; i < dimensions; ++i) {
-			if (i > 0) {id *= size[i-1];}
+			id *= size[i];
 			id += pos[i];
 		}
 		return id;
@@ -40,48 +41,48 @@ class Minefield {
 		}
 		return result;
 	}
-	static int[] neighborIdOffsets(int[] size) {
+	static int[][] neighborPositions(int[] pos, int[] size) {
 		final int dimensions = size.length;
-		final int neighbors = pow(3, dimensions)-1;
+		final int maxneighbors = pow(3, dimensions)-1;
+		orderAssert(dimensions, pos);
 		//System.out.println(neighbors);
-		int[] result = new int[neighbors];
-		neighborIdOffsets(size, 0, result, 0, 0);
-		return result;
+		Vector<int[]> result = new Vector<int[]>(maxneighbors);
+		neighborPositions(pos.clone(), size, 0, result);
+		int[][] arrayRes = new int[result.size()][dimensions];
+		arrayRes = result.toArray(arrayRes);
+		return arrayRes;
 	}
-	static int neighborIdOffsets(int[] size, int dimbase, int[] result, int nextresultidx, int base) {
-		//System.out.println("> dimbase = "+dimbase+", next idx = "+nextresultidx+", base = "+base);
+	static void neighborPositions(int[] pos, int[] size, final int idx, Vector<int[]> result) {
 		final int dimensions = size.length;
-		result[nextresultidx++] = base-1;
-		if (dimbase > 0) {
-			result[nextresultidx++] = base;
+		if (idx >= dimensions) {return;}
+		final int idx2 = idx+1;
+		if (--pos[idx] >= 0) {
+			result.add(pos.clone());
+			neighborPositions(pos.clone(), size, idx2, result);
 		}
-		result[nextresultidx++] = base+1;
-		final int idx = dimbase+1;
-		if (idx < dimensions) {
-			final int cursize = size[dimbase];
-			nextresultidx = neighborIdOffsets(size, idx, result, nextresultidx, (base-1)*cursize);
-			if (dimbase > 0) {
-				nextresultidx = neighborIdOffsets(size, idx, result, nextresultidx, base*cursize);
-			}
-			nextresultidx = neighborIdOffsets(size, idx, result, nextresultidx, (base+1)*cursize);
+		++pos[idx];
+		neighborPositions(pos.clone(), size, idx2, result);
+		if (++pos[idx] < size[idx]) {
+			result.add(pos.clone());
+			neighborPositions(pos.clone(), size, idx2, result);
 		}
-		//System.out.println("<");
-		return nextresultidx;
 	}
 	static char bombChar(int bombs) {
 		if (bombs == 0) {return 'o';}
 		if (bombs > 26) {return '!';}
 		return Character.forDigit(bombs, 36);
 	}
+	static int[] firstPos(int[] size) {
+		return new int[size.length];
+	}
 	public Minefield(int dimensions, int[] size, int bombcount) {
 		this.dimensions = dimensions;
 		this.size = size;
 		this.bombcount = bombcount;
 		orderAssert(dimensions, size);
-		int tilecount = 0;
+		int tilecount = 1;
 		for (int i = 0; i < dimensions; ++i) {
-			if (i > 0) { tilecount *= size[i-1]; }
-			tilecount += size[i];
+			tilecount *= size[i];
 		}
 		this.tilecount = tilecount;
 		if (this.bombcount >= this.tilecount) {
@@ -102,14 +103,25 @@ class Minefield {
 		return idToPos(id, size);
 	}
 	*/
-	int[] neighborIdOffsets() {
-		return neighborIdOffsets(size);
-	}
 	Tile getTile(int id) {
 		return tiles[id];
 	}
 	Tile getTile(int[] pos) {
 		return getTile(posToId(pos));
+	}
+	int[][] neighborPositions(int[] pos) {
+		return neighborPositions(pos, size);
+	}
+	int[] firstPos() {
+		return firstPos(size);
+	}
+	Tile[] neighborTiles(int[] pos) {
+		int[][] neighbors = neighborPositions(pos);
+		Tile[] tiles = new Tile[neighbors.length];
+		for (int i = 0; i < neighbors.length; ++i) {
+			tiles[i] = getTile(neighbors[i]);
+		}
+		return tiles;
 	}
 	private int blanktiles;
 	void generateTiles() {
@@ -135,17 +147,13 @@ class Minefield {
 		while (true) {
 			int tileid = rand.nextInt() % tilecount;
 			if (tileid < 0) {tileid = -tileid;}
-			boolean exists = false;
-			try {
-				Tile tile = this.tiles[tileid];
-			} catch (NullPointerException e) {
-				exists = true;
-			}
+			Tile tile = this.tiles[tileid];
+			boolean exists = tile != null;
 			if (exists) { // retry
 				//System.out.println(tileid+": Taken");
 				continue;
 			}
-			//System.out.println(tileid+": Free!");
+			System.out.println(tileid+": Free!");
 			this.tiles[tileid] = new BombTile();
 			break;
 		}
@@ -217,26 +225,6 @@ class Minefield {
 				}
 		}
 	}
-	Tile[] surroundingTiles(int[] pos) {
-		return surroundingTiles(posToId(pos));
-	}
-	Tile[] surroundingTiles(int id) {
-		int[] relNeighbors = neighborIdOffsets();
-		int idx = 0;
-		for (int i = 0; i < relNeighbors.length; ++i) {
-			int nid = relNeighbors[i]+id;
-			if (nid < 0 || nid >= tilecount) {continue;}
-			idx++;
-		}
-		Tile[] tiles = new Tile[idx];
-		idx = 0;
-		for (int i = 0; i < relNeighbors.length; ++i) {
-			int nid = relNeighbors[i]+id;
-			if (nid < 0 || nid >= tilecount) {continue;}
-			tiles[idx++] = getTile(nid);
-		}
-		return tiles;
-	}
 	int surroundingBombs(int[] pos) {
 		return surroundingBombs(posToId(pos));
 	}
@@ -260,16 +248,24 @@ class Minefield {
 		for (int i = 0; i < tilecount; ++i) {
 			getTile(i).surroundingBombs = 0;
 		}
-		for (int i = 0; i < tilecount; ++i) {
-			Tile tile = getTile(i);
-			if (tile.type() == 2) {
-				//System.out.println("Careful");
-				Tile[] ntiles = surroundingTiles(i);
-				for (int j = 0; j < ntiles.length; ++j) {
-					++(ntiles[j].surroundingBombs);
+		calcSurroundingBombs(0, firstPos());
+		dirtyBomb = false;
+	}
+	void calcSurroundingBombs(int dim, int[] pos) {
+		for (int i = 0; i < size[dim]; ++i) {
+			pos[dim] = i;
+			if (dim == dimensions-1) {
+				Tile tile = getTile(pos);
+				if (tile.type() == 2) {
+					//System.out.println("Careful");
+					Tile[] ntiles = neighborTiles(pos);
+					for (int j = 0; j < ntiles.length; ++j) {
+						++(ntiles[j].surroundingBombs);
+					}
 				}
+			} else {
+				calcSurroundingBombs(dim+1, pos);
 			}
 		}
-		dirtyBomb = false;
 	}
 }

@@ -6,7 +6,7 @@
 	</target>
 	<target name="run" depends="compile">
 		<java classpath="${build}" classname="MineAI">
-			<arg value="4" />
+			<arg line="5 7 15 2" />
 		</java>
 	</target>
 	<target name="dist" depends="compile">
